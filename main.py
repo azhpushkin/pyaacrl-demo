@@ -3,10 +3,9 @@ import tkinter.ttk as ttk
 from tkinter import filedialog as tk_fd
 from tkinter.font import nametofont
 
-import sounddevice as sd
 from PIL import Image, ImageTk
 
-sd.default.samplerate = 44_100
+from backend import Backend
 
 
 APP_GRID = {
@@ -26,7 +25,9 @@ APP_GRID = {
 }
 
 class GUI:
-    def __init__(self):
+    def __init__(self, backend: Backend):
+        self.backend = backend
+
         self.root = tk.Tk()
         default_font = nametofont("TkDefaultFont")
         default_font.configure(size=12)
@@ -94,45 +95,50 @@ class GUI:
     def start(self):
         self.root.mainloop()
 
-    def replay_action(self):
-         self.rec_button.config(relief=tk.SUNKEN)
-         sd.play(self.audio, blocking=True)
-
-         self.rec_button.config(relief=tk.RAISED)
-        
-
     def list_songs_action(self):
-        songs_list = ['Lorem', 'Ipsum', 'hahaha', 'Some another song', 'Что-то на русском']
+        self.results.column('#1', minwidth=0, width=0, stretch=0, anchor=tk.CENTER)
+        songs_list = self.backend.get_all_library_songs()
 
         self.results.delete(*self.results.get_children())
         for song_name in songs_list:
             self.results.insert("", tk.END, values=('0%', song_name))
 
     def add_song_action(self):
-        pass
-    
-    def record_action(self):
-        self.rec_button.config(relief=tk.SUNKEN)
-        self.audio = sd.rec((10 * 44_100), channels=1, blocking=True)
-
-        self.rec_button.config(relief=tk.RAISED)
-    
-    def open_lib_action(self):
-        filetypes = (
-            ('text files', '*.txt'),
-            ('All files', '*.*')
-        )
-
         filename = tk_fd.askopenfilename(
             title='Open a file',
             initialdir='~',
-            filetypes=filetypes
+            filetypes=[('All files', '*.*'), ]
         )
-        print('Picked', filename)
+        self.backend.add_song_to_library(filename)
+    
+    def record_action(self):
+        self.results.column('#1', minwidth=50, width=100, stretch=0, anchor=tk.CENTER)
+        self.results.delete(*self.results.get_children())
 
+        self.record_button.config(relief=tk.SUNKEN)
+        self.backend.record()
+
+        self.record_button.config(relief=tk.RAISED)
+    
+    def replay_action(self):
+        self.replay_button.config(relief=tk.SUNKEN)
+        self.backend.play_recording()
+
+        self.replay_button.config(relief=tk.RAISED)
+    
+    def open_lib_action(self):
+        filename = tk_fd.askopenfilename(
+            title='Open a file',
+            initialdir='~',
+            filetypes=[('All files', '*.*'), ]
+        )
+
+        self.backend.open_songs_library(filename)
         self.library_path.set('Loaded: ' + filename)
+        
 
 
 if __name__ == '__main__':
-    gui = GUI()
+    app_backend = Backend()
+    gui = GUI(app_backend)
     gui.start()
