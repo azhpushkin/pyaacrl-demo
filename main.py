@@ -1,83 +1,123 @@
-import random, string
 import tkinter as tk
+import tkinter.ttk as ttk
 from tkinter import filedialog as tk_fd
 from tkinter.font import nametofont
-import tkinter.ttk as ttk
+
+import sounddevice as sd
 from PIL import Image, ImageTk
 
+sd.default.samplerate = 44_100
 
 
-class App:
-    def __init__(self, root):
-        self.root = root
+APP_GRID = {
+    0: {
+        0: ('open_lib_button', {}),
+        1: ('lib_name_label', dict(columnspan=3, sticky=tk.W)), 
+    },
+    1: {
+        0: ('record_button', {}),
+        1: ('replay_button', {}),
+        2: ('list_songs_button', {}),
+        3: ('add_song_button', {}),
+    },
+    2: {
+        0: ('results_frame', dict(columnspan=4, sticky=tk.NSEW))
+    }
+}
 
-        # self.root.minsize(600, 500)
-        # self.root.maxsize(600, 500)
+class GUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        default_font = nametofont("TkDefaultFont")
+        default_font.configure(size=12)
+
         self.root.resizable(False, False)
 
-        tk.Button(root, text='Open a library', command=self.pick_library, width=10)\
-            .grid(row=0, column=0, pady=10, padx=10)
+        # store images to self to avoid garbage collection, which makes images unload from memory
+        self._record_image = Image.open('record.png').resize((16, 16))
+        self._record_image_tk = ImageTk.PhotoImage(self._record_image)
+        self._replay_image = Image.open('play.png').resize((16, 16)) 
+        self._replay_image_tk = ImageTk.PhotoImage(self._replay_image)
+  
+        self.open_lib_button = tk.Button(
+            self.root, text='Open a library',
+            command=self.open_lib_action, width=10
+        )
+        self.record_button = tk.Button(
+            self.root, text='Record',
+            image=self._record_image_tk , compound=tk.LEFT,
+            command=self.record_action
+        )
+        self.replay_button = tk.Button(
+            self.root, text='Replay',
+            image=self._replay_image_tk, compound=tk.LEFT,
+            command=self.replay_action
+        )
+        self.list_songs_button = tk.Button(
+            self.root, text='List songs',
+            command=self.list_songs_action, width=10
+        )
+        self.add_song_button = tk.Button(
+            self.root, text='Add song',
+            command=self.add_song_action, width=10
+        )
+
+        self.library_path = tk.StringVar()
+        self.library_path.set('No library picked')
+        self.lib_name_label = tk.Label(textvariable=self.library_path)
+
+        self.results_frame = tk.Frame(self.root)
+        self.results: ttk.Treeview
+        self._init_results_frame_()
         
-        self.lib_name = tk.StringVar()
-        self.lib_name.set('No library picked')
-        tk.Label(textvariable=self.lib_name).\
-            grid(row=0, column=1, columnspan=3, sticky=tk.W, padx=10)
-
-        i = Image.open('circle-solid.png')
-        self.rec = ImageTk.PhotoImage(i.resize((16, 16)))
-
-        i2 = Image.open('play-solid.png')
-        self.play = ImageTk.PhotoImage(i2.resize((16, 16)))
-
-        
-
-
-
-        tk.Button(root, text='Record', command=self.record, image=self.rec, compound=tk.LEFT)\
-            .grid(row=1, column=0, padx=10, pady=10)
-        tk.Button(root, text='Replay', command=self.record, image=self.play, compound=tk.LEFT)\
-            .grid(row=1, column=1, padx=10)
-        tk.Button(root, text='List', command=self.record, width=8)\
-            .grid(row=1, column=2, padx=10)
-        tk.Button(root, text='Add', command=self.record, width=8)\
-            .grid(row=1, column=3, padx=10)
-
-        
-        self.f = tk.Frame()
-        self.f.grid(row=2, column=0, columnspan=4, sticky=tk.NSEW, padx=10, pady=10)
-
-
-
+        for x, cols in APP_GRID.items():
+            for y, (element_id, extra_params) in cols.items():
+                getattr(self, element_id).grid(row=x, column=y, padx=10, pady=10, **extra_params)
+    
+    def _init_results_frame_(self):
         columns = ('#1', '#2', )
-        self.results = ttk.Treeview(self.f, show='headings', columns=columns)
+        self.results = ttk.Treeview(self.results_frame, show='headings', columns=columns)
 
         self.results.heading('#1', text='Match')
         self.results.column('#1', minwidth=50, width=100, stretch=0, anchor=tk.CENTER)
         self.results.heading('#2', text='Name')
 
-        rand_text = lambda: ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(random.randint(10, 30)))
+        self.results.grid(row=0, column=0, sticky=tk.NSEW)
+        self.results_frame.columnconfigure(0, weight=1)
 
-        for _ in range(50):
-            self.results.insert("", tk.END, values=('50%', rand_text()))
+        scroll = ttk.Scrollbar(self.results_frame, orient=tk.VERTICAL, command=self.results.yview)
+        scroll.grid(row=0, column=1, sticky=tk.NS)
 
-        self.results.grid(row=0, column=0, sticky='nsew')
-        self.f.columnconfigure(0, weight=1)
+        self.results.configure(yscrollcommand=scroll.set)
+        scroll.config(command=self.results.yview)
 
-        sb = ttk.Scrollbar(self.f, orient=tk.VERTICAL, command=self.results.yview)
-        sb.grid(row=0, column=1, sticky='ns')
+    def start(self):
+        self.root.mainloop()
 
-        self.results.configure(yscrollcommand=sb.set)
-        sb.config(command=self.results.yview)
+    def replay_action(self):
+         self.rec_button.config(relief=tk.SUNKEN)
+         sd.play(self.audio, blocking=True)
 
-
+         self.rec_button.config(relief=tk.RAISED)
         
 
-    
-    
-    def record(self):
+    def list_songs_action(self):
+        songs_list = ['Lorem', 'Ipsum', 'hahaha', 'Some another song', 'Что-то на русском']
+
+        self.results.delete(*self.results.get_children())
+        for song_name in songs_list:
+            self.results.insert("", tk.END, values=('0%', song_name))
+
+    def add_song_action(self):
         pass
     
-    def pick_library(self):
+    def record_action(self):
+        self.rec_button.config(relief=tk.SUNKEN)
+        self.audio = sd.rec((10 * 44_100), channels=1, blocking=True)
+
+        self.rec_button.config(relief=tk.RAISED)
+    
+    def open_lib_action(self):
         filetypes = (
             ('text files', '*.txt'),
             ('All files', '*.*')
@@ -90,15 +130,9 @@ class App:
         )
         print('Picked', filename)
 
-        self.lib_name.set('Loaded: ' + filename)
-
-
+        self.library_path.set('Loaded: ' + filename)
 
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    def_font = nametofont("TkDefaultFont")
-    def_font.configure(size=12)
-    app = App(root)
-    root.mainloop()
-
+    gui = GUI()
+    gui.start()
