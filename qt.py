@@ -1,4 +1,6 @@
 import sys
+import threading
+
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog
 from PySide2 import QtCore, QtGui
@@ -31,6 +33,16 @@ class Window:
         self.window.button_record.clicked.connect(self.start_stop_recording)
         self.window.button_from_file.clicked.connect(self.open_clip_from_file)
         self.window.button_play.clicked.connect(self.play)
+        self.window.button_recognize.clicked.connect(self.recognize)
+
+    def recognize(self):
+        def on_done(result_str):
+            self.window.label_matches_result.setText(result_str)
+
+        threading.Thread(
+            target=self.backend.match_recording,
+            args=(on_done, )
+        ).start()
 
     def play(self):
         self.backend.play_recording()

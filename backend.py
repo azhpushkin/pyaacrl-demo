@@ -50,6 +50,6 @@ class Backend:
     def play_recording(self):
         sd.play(self.file.get_array_of_samples(), 44100)
 
-    def match_recording(self) -> str:
-        time.sleep(5)
-        return "Cool song, written by cool author"
+    def match_recording(self, callback) -> str:
+        time.sleep(2)
+        callback("Cool song, written by cool author")
