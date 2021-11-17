@@ -4,6 +4,7 @@ import numpy as np
 
 import sounddevice as sd
 import soundfile as sf
+from pydub import AudioSegment
 
 sd.default.samplerate = 44_100
 
@@ -12,7 +13,6 @@ class Backend:
     def __init__(self):
         self.library = None
         self.extra_songs = []
-        self.current_recording = None
 
     def open_songs_library(self, path):
         self.library = path
@@ -37,10 +37,18 @@ class Backend:
         self.out.stop()
         sf.write('recording.wav', np.concatenate(self.frames), sd.default.samplerate)
         self.out.close()
+
+        self.open_file('recording.wav')
+
+    def open_file(self, filename):
+        if filename.endswith('mp3'):
+            self.file = AudioSegment.from_mp3(filename)
+        else:
+            self.file = AudioSegment.from_wav(filename)
+        
     
     def play_recording(self):
-        fs, x = sf.read('recording.wav', 'rb')
-        sd.play(x, fs)
+        sd.play(self.file.get_array_of_samples(), 44100)
 
     def match_recording(self) -> str:
         time.sleep(5)

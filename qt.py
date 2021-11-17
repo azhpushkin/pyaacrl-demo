@@ -29,7 +29,12 @@ class Window:
     def connect_signals(self):
         self.window.button_pick_library.clicked.connect(self.pick_library)
         self.window.button_record.clicked.connect(self.start_stop_recording)
+        self.window.button_from_file.clicked.connect(self.open_clip_from_file)
+        self.window.button_play.clicked.connect(self.play)
 
+    def play(self):
+        self.backend.play_recording()
+    
     def pick_library(self):
         path_to_file, _ = QFileDialog.getOpenFileName(
             self.window,
@@ -63,6 +68,24 @@ class Window:
             self.window.button_record.setStyleSheet("");
             self.recording = False
             self.backend.stop_recording()
+
+            self.clip_loaded()
+
+    def open_clip_from_file(self):
+        path_to_file, _ = QFileDialog.getOpenFileName(
+            self.window,
+            filter="Music files (*.mp3 *.wav)"
+        )
+
+        self.backend.open_file(path_to_file)
+        self.clip_loaded()
+
+    
+    def clip_loaded(self):
+        self.window.label_clip_status.setText(f'Clip loaded')
+
+        self.window.button_play.setEnabled(True)
+        self.window.button_recognize.setEnabled(True)
 
 
 

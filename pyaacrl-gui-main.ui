@@ -342,7 +342,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Clip loaded</string>
+            <string>No clip</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
