@@ -1,14 +1,15 @@
 import random
 import time
+import numpy as np
 
 import sounddevice as sd
+import soundfile as sf
 
 sd.default.samplerate = 44_100
 
 
 class Backend:
     def __init__(self):
-        # TODO: init pyaacrl over here
         self.library = None
         self.extra_songs = []
         self.current_recording = None
@@ -23,17 +24,24 @@ class Backend:
         songs = ['Lorem', 'Ipsum', 'hahaha', 'Some another song', 'Что-то на русском', *self.extra_songs]
         random.shuffle(songs)
         return songs
+    
+    def _save_frames(self, indata, frames, time, status):
+        self.frames.append(np.copy(indata))
+    
+    def start_recording(self):
+        self.frames = []
+        self.out = sd.InputStream(latency=None, channels=1, callback=self._save_frames)
+        self.out.start()
 
-    def record(self, duration: int = 5):
-        self.current_recording = sd.rec((duration * sd.default.samplerate), channels=1, blocking=True)
+    def stop_recording(self):
+        self.out.stop()
+        sf.write('recording.wav', np.concatenate(self.frames), sd.default.samplerate)
+        self.out.close()
     
     def play_recording(self):
-        sd.play(self.current_recording, blocking=True)
+        fs, x = sf.read('recording.wav', 'rb')
+        sd.play(x, fs)
 
-    def match_recording(self):
+    def match_recording(self) -> str:
         time.sleep(5)
-        return [
-            (random.randint(0, 100), song)
-            for song in self.get_all_library_songs()
-        ]
-    
+        return "Cool song, written by cool author"
