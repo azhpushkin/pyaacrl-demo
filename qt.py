@@ -35,6 +35,12 @@ class Window:
         self.window.button_play.clicked.connect(self.play)
         self.window.button_recognize.clicked.connect(self.recognize)
 
+        self.window.list_songs.itemClicked.connect(self.on_item_click)
+
+    def on_item_click(self, item):
+        self.window.button_rename.setEnabled(True)
+        self.window.button_delete_song.setEnabled(True)
+
     def recognize(self):
         def on_done(result_str):
             self.window.label_matches_result.setText(result_str)
@@ -43,6 +49,7 @@ class Window:
             target=self.backend.match_recording,
             args=(on_done, )
         ).start()
+        
 
     def play(self):
         self.backend.play_recording()
@@ -58,6 +65,17 @@ class Window:
         a.setEnabled(True)
 
         self.backend.open_songs_library(path_to_file)
+        self.window.button_add_songs.setEnabled(True)
+
+
+        # TODO
+        self.window.list_songs.clear()
+        songs = ['asdasdasd', '123', 'idh1u910d']
+        for song in songs:
+            self.window.list_songs.addItem(song)
+
+        self.window.button_rename.setEnabled(False)
+        self.window.button_delete_song.setEnabled(False)
     
     def start_stop_recording(self):
         if not self.recording:
