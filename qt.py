@@ -38,8 +38,9 @@ class Window:
         self.window.list_songs.itemClicked.connect(self.on_item_click)
 
     def on_item_click(self, item):
-        self.window.button_rename.setEnabled(True)
-        self.window.button_delete_song.setEnabled(True)
+        pass  # not yet
+        # self.window.button_rename.setEnabled(True)
+        # self.window.button_delete_song.setEnabled(True)
 
     def recognize(self):
         def on_done(result_str):
@@ -57,7 +58,7 @@ class Window:
     def pick_library(self):
         path_to_file, _ = QFileDialog.getOpenFileName(
             self.window,
-            filter="Music files (*.mp3 *.wav)"
+            # filter="Music files (*.mp3 *.wav)"
         )
         
         a = self.window.label_library_path
@@ -70,7 +71,7 @@ class Window:
 
         # TODO
         self.window.list_songs.clear()
-        songs = ['asdasdasd', '123', 'idh1u910d']
+        songs = self.backend.get_all_library_songs()
         for song in songs:
             self.window.list_songs.addItem(song)
 

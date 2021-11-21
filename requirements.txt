@@ -3,3 +3,4 @@ SoundFile==0.10.3.post1
 pydub==0.25.1
 numpy==1.21.4
 Pillow==8.4.0
+pyaacrl @ git+https://github.com/azhpushkin/pyaacrl/@636db7deba78223554d6515b5a60799f1002c430

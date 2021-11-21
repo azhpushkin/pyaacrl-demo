@@ -6,6 +6,8 @@ import sounddevice as sd
 import soundfile as sf
 from pydub import AudioSegment
 
+import pyaacrl
+
 sd.default.samplerate = 44_100
 
 
@@ -15,15 +17,13 @@ class Backend:
         self.extra_songs = []
 
     def open_songs_library(self, path):
-        self.library = path
+        self.library = pyaacrl.Storage(path)
 
     def add_song_to_library(self, path):
         self.extra_songs.append(path)
 
     def get_all_library_songs(self):
-        songs = ['Lorem', 'Ipsum', 'hahaha', 'Some another song', 'Что-то на русском', *self.extra_songs]
-        random.shuffle(songs)
-        return songs
+        return [s.name for s in self.library.list_songs()]
     
     def _save_frames(self, indata, frames, time, status):
         self.frames.append(np.copy(indata))
@@ -35,6 +35,8 @@ class Backend:
 
     def stop_recording(self):
         self.out.stop()
+
+        # TODO: check pydub.export
         sf.write('recording.wav', np.concatenate(self.frames), sd.default.samplerate)
         self.out.close()
 
@@ -45,11 +47,18 @@ class Backend:
             self.file = AudioSegment.from_mp3(filename)
         else:
             self.file = AudioSegment.from_wav(filename)
+
+        self.file__path = filename
         
-    
     def play_recording(self):
-        sd.play(self.file.get_array_of_samples(), 44100)
+        a = self.file.split_to_mono()
+
+        x = [np.array(i.get_array_of_samples()) for i in a]
+        q = np.column_stack(x)
+        sd.play(q)
 
     def match_recording(self, callback) -> str:
-        time.sleep(2)
-        callback("Cool song, written by cool author")
+        matches = self.library.get_matches(pyaacrl.Fingerprint.from_wav(self.file__path))
+        top_match, conf = matches[0]
+        callback(top_match.name + '\n' + f'Confidence: {conf}')
+
